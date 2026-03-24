@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "modsync",
+	"version": "${version}",
+	"name": "ModSync",
+	"description": "This simple mod adds modpack synchronisation via a GitHub respository.",
+	"authors": [
+		"JMalvin06"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/modsync/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"jmalvin.modsync.ModSync"
+		],
+		"client": [
+			"jmalvin.modsync.ModSyncClient"
+		]
+	},
+	"mixins": [
+		"modsync.mixins.json",
+		{
+			"config": "modsync.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
