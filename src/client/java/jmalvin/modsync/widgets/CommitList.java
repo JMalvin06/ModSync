@@ -81,7 +81,7 @@ public class CommitList extends AbstractSelectionList<CommitList.CommitEntry> {
         public void render(GuiGraphics guiGraphics, int x, int y, int k, int l, int m, int n, int o, boolean bl, float f) {
             int color = isCurrent ? 0xFFFF00 : 0xFFFFFF;
             // Apply indent and translation from list position
-            x += 10 + listX;
+            x = 10 + listX;
             guiGraphics.drawString(this.font, "commit " + commit.name() +  (isCurrent ? " -> (you are here)" : ""), x, y, color);
             guiGraphics.drawString(this.font, commit.getShortMessage().trim(), x, y + 10, color);
             guiGraphics.drawString(this.font, "Author: " + commit.getAuthorIdent().getName() + " <" + commit.getAuthorIdent().getEmailAddress() + ">", x, y + 20, color);
