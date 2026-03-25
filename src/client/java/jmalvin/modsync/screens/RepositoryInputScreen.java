@@ -1,6 +1,7 @@
 package jmalvin.modsync.screens;
 
-import jmalvin.modsync.tools.ModDownloader;
+import jmalvin.modsync.ModSync;
+import jmalvin.modsync.ModSyncClient;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,14 +12,16 @@ import net.minecraft.network.chat.Component;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 
+import java.util.concurrent.CompletableFuture;
+
 @Environment(EnvType.CLIENT)
-public class ModSyncScreen extends Screen {
+public class RepositoryInputScreen extends Screen {
     private Screen lastScreen;
     private EditBox textField;
     private String repository;
     private Button submit;
 
-    public ModSyncScreen(Screen lastScreen) {
+    public RepositoryInputScreen(Screen lastScreen) {
         super(Component.literal("Mod Sync"));
         this.lastScreen = lastScreen;
     }
@@ -53,11 +56,18 @@ public class ModSyncScreen extends Screen {
     }
 
     private void downloadMods() {
+
         if (repository != null && !repository.isBlank() && repository.startsWith("https://github.com")) {
             try {
-                ModDownloader.setupRepo(repository);
-                this.minecraft.setScreen(new SuccessScreen(lastScreen));
-            } catch (GitAPIException | JGitInternalException e) {
+                CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return ModSyncClient.DOWNLOADER.setupRepo(repository);
+                    } catch (GitAPIException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                this.minecraft.setScreen(new SuccessScreen(lastScreen, future));
+            } catch (JGitInternalException e) {
                 this.minecraft.setScreen(new GitErrorScreen(this));
             }
         }
