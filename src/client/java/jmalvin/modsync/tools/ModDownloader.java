@@ -1,13 +1,9 @@
 package jmalvin.modsync.tools;
 
-import jmalvin.modsync.ModSync;
-import jmalvin.modsync.ModSyncClient;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RmCommand;
-import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -25,7 +21,9 @@ public class ModDownloader {
     public ModDownloader() {
         try {
             gitDir =  Git.open(new File("mods"));
-        } catch (Exception ignored) {}
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Git getGitDir() {
@@ -33,22 +31,23 @@ public class ModDownloader {
     }
 
     public boolean upToDate() throws IOException {
-        return getCommitsAhead().isEmpty();
+        try {
+            return getCommitsAhead().isEmpty();
+        } catch (GitAPIException e) {
+            throw new IOException(e);
+        }
     }
 
-    public List<RevCommit> getCommitsAhead() throws IOException {
+    public List<RevCommit> getCommitsAhead() throws GitAPIException, IOException {
         ArrayList<RevCommit> commits = new ArrayList<>();
         Repository repo = gitDir.getRepository();
         ObjectId localHead = repo.resolve("refs/heads/main");
         ObjectId remoteHead = repo.resolve("refs/remotes/origin/main");
-        try (RevWalk revWalk = new RevWalk(repo)) {
-            RevCommit localCommit = revWalk.parseCommit(localHead);
-            RevCommit remoteCommit = revWalk.parseCommit(remoteHead);
-            for (RevCommit commit : gitDir.log().addRange(localCommit, remoteCommit).call()) {
-                commits.add(commit);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException();
+        RevWalk revWalk = new RevWalk(repo);
+        RevCommit localCommit = revWalk.parseCommit(localHead);
+        RevCommit remoteCommit = revWalk.parseCommit(remoteHead);
+        for (RevCommit commit : gitDir.log().addRange(localCommit, remoteCommit).call()) {
+            commits.add(commit);
         }
         return commits;
     }
@@ -57,33 +56,21 @@ public class ModDownloader {
         RevCommit commit;
         Repository repo = gitDir.getRepository();
         ObjectId localHead = repo.resolve("refs/heads/main");
-        try (RevWalk revWalk = new RevWalk(repo)) {
-            commit = revWalk.parseCommit(localHead);
-        } catch (Exception e) {
-            throw new RuntimeException();
-        }
+        RevWalk revWalk = new RevWalk(repo);
+        commit = revWalk.parseCommit(localHead);
         return commit;
     }
-    public List<RevCommit> getCommitsBehind() throws IOException {
+    public List<RevCommit> getCommitsBehind() throws GitAPIException {
         ArrayList<RevCommit> commits = new ArrayList<>();
-        try {
-            for (RevCommit commit : gitDir.log().call()) {
-                commits.add(commit);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException();
+        for (RevCommit commit : gitDir.log().call()) {
+            commits.add(commit);
         }
         return commits.subList(1, commits.size());
     }
 
-    public void fetch() {
+    public void fetch() throws GitAPIException {
         if (gitDir != null) {
-            try {
-                gitDir.fetch().call();
-            } catch (Exception e) {
-                // TODO handle
-                throw new RuntimeException();
-            }
+            gitDir.fetch().call();
         }
     }
 
@@ -96,17 +83,23 @@ public class ModDownloader {
                 gitDir.pull().call();
                 gitDir.stashApply().call();
                 return true;
-            } catch (CheckoutConflictException e){
-                // TODO handle merge conflict
-                throw new RuntimeException(e);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                String message = e.getMessage().contains("cannot open git-upload-pack") ? "Internet connection error" : e.getMessage();
+                throw new RuntimeException(message);
             }
         }
         return false;
     }
 
-    public boolean setupRepo(String repo) throws GitAPIException{
+    public boolean setupRepo(String repo) throws IOException{
+       try {
+           Git.lsRemoteRepository()
+                   .setRemote(repo)
+                   .call();
+       } catch (GitAPIException e) {
+           throw new IOException(e.getMessage().contains("connection failed") ? "Internet connection failure" : "That repository is invalid or does not exist");
+       }
+
         if (gitDir != null) {
             try {
                 DirCache cache = gitDir.getRepository().readDirCache();
@@ -119,30 +112,26 @@ public class ModDownloader {
                 Path modsFolder = Path.of("mods/.git");
                 if (modsFolder.toFile().exists()) ModDownloader.deleteDirectory(modsFolder);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new IOException("There was an error removing git files");
             }
         }
-
-        Git.lsRemoteRepository()
-                .setRemote(repo)
-                .call();
 
         Path modDir = Paths.get("mods");
         if (!Files.exists(modDir)) {
             try {
                 Files.createDirectory(modDir);
             } catch (Exception e) {
-                // TODO Handle exception properly
-                throw new RuntimeException(e);
+                throw new IOException("There was an error creating the mods directory");
             }
         }
 
-        System.out.println("Cloning repository..");
-        Git git = Git.cloneRepository().setURI(repo).setDirectory(new File("mods/modlist")).call();
-        git.close();
-        System.out.println("Successfully cloned repository!");
+        try {
+            Git git = Git.cloneRepository().setURI(repo).setDirectory(new File("mods/modlist")).call();
+            git.close();
+        } catch (GitAPIException e) {
+            throw new IOException("Could not clone repository");
+        }
 
-        System.out.println("Extracting mods...");
         Path modlist = Paths.get("mods/modlist");
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(modlist)) {
             for (Path mod : stream) {
@@ -159,12 +148,10 @@ public class ModDownloader {
                 }
             }
             Files.delete(modlist);
-            System.out.println("Mods successfully extracted!");
             gitDir =  Git.open(new File("mods"));
             return true;
         } catch (Exception e) {
-            // TODO Handle exception properly
-            throw new RuntimeException(e);
+            throw new IOException("There was an error extracting mods");
         }
     }
 
@@ -178,8 +165,7 @@ public class ModDownloader {
                 }
             }
         } catch (Exception e) {
-            // TODO Handle exception properly
-            throw new RuntimeException(e);
+            throw new IOException(e);
         }
         Files.delete(dir);
     }

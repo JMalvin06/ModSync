@@ -5,8 +5,11 @@ import jmalvin.modsync.ModSyncClient;
 import jmalvin.modsync.widgets.CommitList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.TransportException;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -26,8 +29,15 @@ public class RepositoryView extends Screen {
 
         Button refresh = new Button.Builder(Component.literal("Refresh"),
                 (button) -> {
-                    ModSyncClient.DOWNLOADER.fetch();
-                    minecraft.setScreen(new RepositoryView(lastScreen));
+                    try {
+                        ModSyncClient.DOWNLOADER.fetch();
+                        minecraft.setScreen(new RepositoryView(lastScreen));
+                    } catch (GitAPIException e) {
+                        minecraft.setScreen(new SyncErrorScreen("There was an error fetching the repository"));
+                    } catch (Exception e) {
+                        this.minecraft.setScreen(new SyncErrorScreen("Unknown error: " + e.getMessage()));
+                    }
+
                 })
                 .bounds(this.width - 85 - 115, 5, 80, 20).build();
         addRenderableWidget(refresh);
@@ -56,7 +66,7 @@ public class RepositoryView extends Screen {
                 pull.setMessage(Component.literal("(Up to Date)"));
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            minecraft.setScreen(new SyncErrorScreen(e.getMessage()));
         }
         addRenderableWidget(pull);
 
@@ -70,8 +80,10 @@ public class RepositoryView extends Screen {
             boolean upToDate = ModSyncClient.DOWNLOADER.upToDate();
             guiGraphics.drawString(this.minecraft.font,  upToDate ? "Mods are up to date" : "Update available: " + ModSyncClient.DOWNLOADER.getCommitsAhead().size() + " versions behind",
                                 5, 15,  upToDate ? 0x3BB143 : 0xEDC001);
+        } catch (IOException e) {
+            this.minecraft.setScreen(new SyncErrorScreen("There was an error reading the mods folder"));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            this.minecraft.setScreen(new SyncErrorScreen("Unknown error: " + e.getMessage()));
         }
     }
 }

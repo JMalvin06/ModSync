@@ -11,6 +11,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import java.io.IOException;
@@ -34,8 +35,7 @@ public class CommitList extends AbstractSelectionList<CommitList.CommitEntry> {
             for (RevCommit commit : ModSyncClient.DOWNLOADER.getCommitsBehind()) {
                 this.addEntry(new CommitEntry(minecraft.font, commit, false, posX));
             }
-        } catch (IOException e) {
-            // TODO handle
+        } catch (IOException | GitAPIException e) {
             throw new RuntimeException(e);
         }
     }

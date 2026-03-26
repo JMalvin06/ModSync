@@ -1,6 +1,5 @@
 package jmalvin.modsync.screens;
 
-import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -9,14 +8,13 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.JGitInternalException;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 @Environment(EnvType.CLIENT)
 public class RepositoryInputScreen extends Screen {
-    private Screen lastScreen;
+    private final Screen lastScreen;
     private EditBox textField;
     private String repository;
     private Button submit;
@@ -56,20 +54,15 @@ public class RepositoryInputScreen extends Screen {
     }
 
     private void downloadMods() {
-
         if (repository != null && !repository.isBlank() && repository.startsWith("https://github.com")) {
-            try {
-                CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return ModSyncClient.DOWNLOADER.setupRepo(repository);
-                    } catch (GitAPIException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                this.minecraft.setScreen(new SuccessScreen(lastScreen, future));
-            } catch (JGitInternalException e) {
-                this.minecraft.setScreen(new GitErrorScreen(this));
-            }
+            CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                try {
+                    return ModSyncClient.DOWNLOADER.setupRepo(repository);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            this.minecraft.setScreen(new SuccessScreen(lastScreen, future));
         }
 
     }

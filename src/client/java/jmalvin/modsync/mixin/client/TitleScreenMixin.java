@@ -4,11 +4,14 @@ import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
 import jmalvin.modsync.screens.RepositoryInputScreen;
 import jmalvin.modsync.screens.RepositoryView;
+import jmalvin.modsync.screens.SyncErrorScreen;
 import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import org.eclipse.jgit.api.errors.TransportException;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -37,8 +40,11 @@ public abstract class TitleScreenMixin extends Screen {
             try {
                 ModSyncClient.DOWNLOADER.fetch();
                 this.minecraft.setScreen(new RepositoryView(this));
+            } catch (TransportException e) {
+                ModSync.LOGGER.info("HELLO");
+                minecraft.setScreen(new SyncErrorScreen("There was a connection error, please try again."));
             } catch (Exception e) {
-                throw new RuntimeException();
+                throw new RuntimeException(e);
             }
         }
     }

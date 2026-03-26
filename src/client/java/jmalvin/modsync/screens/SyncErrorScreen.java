@@ -3,20 +3,21 @@ package jmalvin.modsync.screens;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 
-public class GitErrorScreen extends Screen {
-    private Screen lastScreen;
-    protected GitErrorScreen(Screen lastScreen) {
-        super(Component.literal("Git Error Screen"));
-        this.lastScreen = lastScreen;
+public class SyncErrorScreen extends Screen{
+    private final String message;
+    public SyncErrorScreen(String message) {
+        super(Component.literal("Sync Error Screen"));
+        this.message = message;
     }
 
     @Override
     protected void init() {
         Button buttonWidget = new Button.Builder(
-                Component.literal("Try Again"),
-                (btn) -> this.minecraft.setScreen(lastScreen))
+                Component.literal("Back"),
+                (btn) -> this.minecraft.setScreen(new TitleScreen()))
                 .bounds(this.width / 2 - 50, 130, 100, 20).build();
 
         this.addRenderableWidget(buttonWidget);
@@ -25,6 +26,6 @@ public class GitErrorScreen extends Screen {
     @Override
     public void render(GuiGraphics guiGraphics, int i, int j, float f) {
         super.render(guiGraphics, i, j, f);
-        guiGraphics.drawCenteredString(this.font, Component.literal("That repository is invalid or does not exist"), this.width / 2, 115, 16777215);
+        guiGraphics.drawCenteredString(this.font, Component.literal(message), this.width / 2, 115, 16777215);
     }
 }

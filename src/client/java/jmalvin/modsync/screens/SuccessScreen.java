@@ -1,13 +1,17 @@
 package jmalvin.modsync.screens;
 
+import jmalvin.modsync.ModSync;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.LoadingDotsWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.TransportException;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class SuccessScreen extends Screen {
     private Screen lastScreen;
@@ -52,6 +56,9 @@ public class SuccessScreen extends Screen {
             guiGraphics.drawCenteredString(this.font, Component.literal("Success!"), this.width / 2, 100, 16777215);
             guiGraphics.drawCenteredString(this.font, Component.literal("Please restart the game to use these mods."), this.width / 2, 115, 16777215);
         } else if (future.isDone()) {
+            if (future.isCompletedExceptionally()) {
+                minecraft.setScreen(new SyncErrorScreen(future.exceptionNow().getMessage()));
+            }
             future = null;
             dots.visible = false;
             button.visible = true;
