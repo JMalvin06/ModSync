@@ -1,21 +1,18 @@
 package jmalvin.modsync.screens;
 
-import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
 import jmalvin.modsync.widgets.CommitList;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.ErrorScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.TransportException;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 public class RepositoryView extends Screen {
-    private Screen lastScreen;
+    private final Screen lastScreen;
     private CommitList list;
     public RepositoryView(Screen lastScreen) {
         super(Component.literal("Repository View"));

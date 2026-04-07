@@ -1,20 +1,16 @@
 package jmalvin.modsync.screens;
 
-import jmalvin.modsync.ModSync;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.LoadingDotsWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.TransportException;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 public class SuccessScreen extends Screen {
-    private Screen lastScreen;
+    private final Screen lastScreen;
     private CompletableFuture<Boolean> future;
 
     private LoadingDotsWidget dots;

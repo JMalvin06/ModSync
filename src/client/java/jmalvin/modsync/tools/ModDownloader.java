@@ -1,5 +1,6 @@
 package jmalvin.modsync.tools;
 
+import jmalvin.modsync.ModSync;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -20,7 +21,8 @@ public class ModDownloader {
 
     public ModDownloader() {
         try {
-            gitDir =  Git.open(new File("mods"));
+            if (new File(".git").exists())
+                gitDir =  Git.open(new File(""));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -100,7 +102,8 @@ public class ModDownloader {
            throw new IOException(e.getMessage().contains("connection failed") ? "Internet connection failure" : "That repository is invalid or does not exist");
        }
 
-        if (gitDir != null) {
+       File gitFolder = new File(".git");
+        if (gitDir != null || gitFolder.exists()) {
             try {
                 DirCache cache = gitDir.getRepository().readDirCache();
                 RmCommand rm = gitDir.rm();
@@ -109,50 +112,58 @@ public class ModDownloader {
                     rm.addFilepattern(path);
                 }
                 rm.call();
-                Path modsFolder = Path.of("mods/.git");
-                if (modsFolder.toFile().exists()) ModDownloader.deleteDirectory(modsFolder);
+                if (gitFolder.exists()) ModDownloader.deleteDirectory(gitFolder.toPath());
             } catch (Exception e) {
                 throw new IOException("There was an error removing git files");
             }
         }
 
-        Path modDir = Paths.get("mods");
-        if (!Files.exists(modDir)) {
-            try {
-                Files.createDirectory(modDir);
-            } catch (Exception e) {
-                throw new IOException("There was an error creating the mods directory");
-            }
-        }
-
         try {
-            Git git = Git.cloneRepository().setURI(repo).setDirectory(new File("mods/modlist")).call();
+            if (new File("modsync").exists())
+                deleteDirectory(Path.of("modsync"));
+            Git git = Git.cloneRepository().setURI(repo).setDirectory(new File("modsync")).call();
             git.close();
-        } catch (GitAPIException e) {
+        } catch (Exception e) {
             throw new IOException("Could not clone repository");
         }
 
-        Path modlist = Paths.get("mods/modlist");
+        Path modlist = Path.of("modsync");
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(modlist)) {
-            for (Path mod : stream) {
-                String modName = mod.getFileName().toString();
-                if (modName.endsWith("jar") || modName.equals(".git")) {
-                    if (modName.equals(".git") && (new File("mods/.git").exists())) {
-                        deleteDirectory(new File("mods/.git").toPath());
-                    }
-                    Files.move(mod, mod.getParent().getParent().resolve(mod.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-                } else if(Files.isDirectory(mod)) {
-                    deleteDirectory(mod);
+            for (Path file : stream) {;
+                if (Files.isDirectory(file)) {
+                    moveDirectory(file, Path.of(""));
                 } else {
-                    Files.delete(mod);
+                    Files.move(file, file.getFileName());
                 }
             }
-            Files.delete(modlist);
-            gitDir =  Git.open(new File("mods"));
+            deleteDirectory(modlist);
+            gitDir =  Git.open(new File(""));
             return true;
         } catch (Exception e) {
-            throw new IOException("There was an error extracting mods");
+            throw new IOException(/*"There was an error extracting mods"*/e);
         }
+    }
+
+    public static void moveDirectory(Path dir, Path dst) throws IOException {
+        if (!Files.isDirectory(dir))
+            throw new IllegalArgumentException("Not a directory");
+
+        File newDir = dst.resolve(dir.getFileName()).toFile();
+        if (newDir.mkdir() || newDir.exists()) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+                for (Path file : stream) {
+                    if (Files.isDirectory(file)) {
+                        moveDirectory(file, newDir.toPath());
+                    } else {
+                        Files.move(file, newDir.toPath().resolve(file.getFileName()));
+                    }
+                }
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }
+
+        Files.delete(dir);
     }
 
     public static void deleteDirectory(Path dir) throws IOException {
