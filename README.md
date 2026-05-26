@@ -17,4 +17,4 @@ To respect the hard work of other mod developers, please make sure to always che
 2. Open Minecraft with ModSync installed and add the repository link
 
 ## Compatibility
-Currently only compatible with **Fabric 1.21.1**
+Currently only compatible with **Fabric 1.20.1 and 1.21.1**
