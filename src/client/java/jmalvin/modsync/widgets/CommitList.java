@@ -25,8 +25,9 @@ import java.util.List;
 public class CommitList extends AbstractSelectionList<CommitList.CommitEntry> {
 
     public CommitList(Minecraft minecraft, int width, int height, int posX, int posY, int spacing) {
-        super(minecraft, width, height, posY, spacing);
-        setX(posX);
+        super(minecraft, width, height, posY, posY + height, spacing);
+        //setX(posX);
+        setLeftPos(posX);
         try {
             for (RevCommit commit : ModSyncClient.DOWNLOADER.getCommitsAhead()) {
                 this.addEntry(new CommitEntry(minecraft.font, commit, false, posX));
@@ -41,13 +42,18 @@ public class CommitList extends AbstractSelectionList<CommitList.CommitEntry> {
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    protected int getScrollbarPosition() {
+        return this.width - 5;
+    }
+
+    @Override
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
         return;
     }
 
     @Override
-    protected int getScrollbarPosition() {
-        return this.width - 5;
+    public void render(GuiGraphics guiGraphics, int i, int j, float f) {
+        super.render(guiGraphics, i, j, f);
     }
 
     protected static class CommitEntry extends ContainerObjectSelectionList.Entry<CommitEntry> {
@@ -83,7 +89,6 @@ public class CommitList extends AbstractSelectionList<CommitList.CommitEntry> {
             Instant instant = Instant.ofEpochSecond(commit.getCommitTime());
             ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
             guiGraphics.drawString(this.font, "Date:    " + zonedDateTime.format(DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss yyyy z")), x, y + 30, color);
-
         }
     }
 

@@ -25,6 +25,7 @@ public class SyncErrorScreen extends Screen{
 
     @Override
     public void render(GuiGraphics guiGraphics, int i, int j, float f) {
+        renderBackground(guiGraphics);
         super.render(guiGraphics, i, j, f);
         guiGraphics.drawCenteredString(this.font, Component.literal(message), this.width / 2, 115, 16777215);
     }

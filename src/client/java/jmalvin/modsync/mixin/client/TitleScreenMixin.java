@@ -6,7 +6,8 @@ import jmalvin.modsync.screens.FolderSelectScreen;
 import jmalvin.modsync.screens.RepositoryInputScreen;
 import jmalvin.modsync.screens.RepositoryView;
 import jmalvin.modsync.screens.SyncErrorScreen;
-import net.minecraft.client.gui.components.SpriteIconButton;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
@@ -26,9 +27,7 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(at = @At("RETURN"), method = "createNormalMenuOptions")
     public void addCustomButton(int i, int j, CallbackInfo ci) {
-        SpriteIconButton modSyncButton = SpriteIconButton.builder(Component.literal("Mod Sync"), (button) -> setModsync(), true).width(20).sprite(ResourceLocation.fromNamespaceAndPath(ModSync.MOD_ID, "icon/sync"), 15, 15).build();
-        //SpriteIconButton modSyncButton = SpriteIconButton.builder(Component.literal("Mod Sync"), (button) -> minecraft.setScreen(new RepositoryView(this)), true).width(20).sprite(ResourceLocation.fromNamespaceAndPath(ModSync.MOD_ID, "icon/sync"), 15, 15).build();
-        modSyncButton.setPosition(this.width / 2 - 100 + 205, i);
+        ImageButton modSyncButton = new ImageButton(this.width / 2 - 100 + 205, i, 20, 20, 0, 0, 20, new ResourceLocation(ModSync.MOD_ID, "textures/icon/sync.png"), 32, 64, (button) -> setModsync());
         this.addRenderableWidget(modSyncButton);
 
     }

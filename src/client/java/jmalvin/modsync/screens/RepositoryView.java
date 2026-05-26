@@ -21,7 +21,7 @@ public class RepositoryView extends Screen {
 
     @Override
     protected void init() {
-        list = new CommitList(this.minecraft, this.width, 3*this.height/4, 0, 30, 50);
+        list = new CommitList(this.minecraft, this.width, 3 * this.height / 4, 0, 30, 50);
         addRenderableWidget(list);
 
         Button refresh = new Button.Builder(Component.literal("Refresh"),
@@ -66,12 +66,11 @@ public class RepositoryView extends Screen {
             minecraft.setScreen(new SyncErrorScreen(e.getMessage()));
         }
         addRenderableWidget(pull);
-
-
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int i, int j, float f) {
+        renderBackground(guiGraphics);
         super.render(guiGraphics, i, j, f);
         try {
             boolean upToDate = ModSyncClient.DOWNLOADER.upToDate();

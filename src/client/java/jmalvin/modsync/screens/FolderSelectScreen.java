@@ -1,5 +1,6 @@
 package jmalvin.modsync.screens;
 
+import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
 import jmalvin.modsync.tools.ModDownloader;
 import jmalvin.modsync.widgets.FolderChecklist;
@@ -12,10 +13,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class FolderSelectScreen extends Screen {
-    private Screen lastScreen;
+    private final Screen lastScreen;
 
     public FolderSelectScreen(Screen lastScreen) {
         super(Component.literal("Folder Select"));
@@ -26,8 +28,6 @@ public class FolderSelectScreen extends Screen {
     protected void init() {
         FolderChecklist checklist = new FolderChecklist(this.minecraft, this.width/3, this.width, this.height/4, this.height/2 - this.height/4, 20, Path.of("modsync"));
         addRenderableWidget(checklist);
-        for (Button button : checklist.getButtons())
-            addRenderableWidget(button);
 
         Button back = new Button.Builder(Component.literal("Back"),
                 (button) -> {
@@ -75,6 +75,7 @@ public class FolderSelectScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int i, int j, float f) {
+        renderBackground(guiGraphics);
         super.render(guiGraphics, i, j, f);
 
         String text = "Select the folders you want to pull from: ";

@@ -1,7 +1,7 @@
 package jmalvin.modsync.screens;
 
+import jmalvin.modsync.widgets.LoadingDotsWidget;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.LoadingDotsWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -21,14 +21,15 @@ public class LoadingScreen extends Screen {
 
     @Override
     protected void init() {
-        LoadingDotsWidget dots = new LoadingDotsWidget(this.font, Component.literal("Pulling mods.."));
-        dots.setSize(40, 40);
-        dots.setPosition(this.width / 2 - 20, this.height / 2 - 20);
+        LoadingDotsWidget dots = new LoadingDotsWidget("Pulling mods..", this.width/2, this.height/2, this.font);
+        //dots.setSize(40, 40);
+        dots.setPosition(this.width / 2, this.height / 2 - 40);
         addRenderableWidget(dots);
     }
 
     @Override
     public void render(GuiGraphics guiGraphics, int i, int j, float f) {
+        renderBackground(guiGraphics);
         super.render(guiGraphics, i, j, f);
         if (future.isDone()) {
             if (future.isCompletedExceptionally()) {
