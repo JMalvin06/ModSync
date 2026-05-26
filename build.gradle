@@ -1,3 +1,4 @@
+// Must use ./gradlew remapJar to build correctly
 plugins {
 	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
 	id 'maven-publish'

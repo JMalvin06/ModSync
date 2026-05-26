@@ -2,7 +2,6 @@ package jmalvin.modsync.config;
 
 import jmalvin.modsync.ModSync;
 import net.fabricmc.loader.api.FabricLoader;
-import org.eclipse.jgit.util.IO;
 
 import java.io.File;
 import java.io.IOException;
