@@ -33,7 +33,8 @@ public class LoadingScreen extends Screen {
         super.render(guiGraphics, i, j, f);
         if (future.isDone()) {
             if (future.isCompletedExceptionally()) {
-                minecraft.setScreen(new SyncErrorScreen(future.exceptionNow().getLocalizedMessage()));
+                String message = future.handle((r, ex) -> ex != null ? ex.getLocalizedMessage() : null).join();
+                minecraft.setScreen(new SyncErrorScreen(message));
             } else {
                 minecraft.setScreen(nextScreen);
             }
