@@ -2,6 +2,7 @@ package jmalvin.modsync.mixin.client;
 
 import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
+import jmalvin.modsync.screens.FolderSelectScreen;
 import jmalvin.modsync.screens.RepositoryInputScreen;
 import jmalvin.modsync.screens.RepositoryView;
 import jmalvin.modsync.screens.SyncErrorScreen;
@@ -26,6 +27,7 @@ public abstract class TitleScreenMixin extends Screen {
     @Inject(at = @At("RETURN"), method = "createNormalMenuOptions")
     public void addCustomButton(int i, int j, CallbackInfo ci) {
         SpriteIconButton modSyncButton = SpriteIconButton.builder(Component.literal("Mod Sync"), (button) -> setModsync(), true).width(20).sprite(ResourceLocation.fromNamespaceAndPath(ModSync.MOD_ID, "icon/sync"), 15, 15).build();
+        //SpriteIconButton modSyncButton = SpriteIconButton.builder(Component.literal("Mod Sync"), (button) -> minecraft.setScreen(new RepositoryView(this)), true).width(20).sprite(ResourceLocation.fromNamespaceAndPath(ModSync.MOD_ID, "icon/sync"), 15, 15).build();
         modSyncButton.setPosition(this.width / 2 - 100 + 205, i);
         this.addRenderableWidget(modSyncButton);
 
@@ -40,7 +42,6 @@ public abstract class TitleScreenMixin extends Screen {
                 ModSyncClient.DOWNLOADER.fetch();
                 this.minecraft.setScreen(new RepositoryView(this));
             } catch (TransportException e) {
-                ModSync.LOGGER.info("HELLO");
                 minecraft.setScreen(new SyncErrorScreen("There was a connection error, please try again."));
             } catch (Exception e) {
                 throw new RuntimeException(e);

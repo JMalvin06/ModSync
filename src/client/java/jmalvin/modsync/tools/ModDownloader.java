@@ -1,12 +1,16 @@
 package jmalvin.modsync.tools;
 
 import jmalvin.modsync.ModSync;
+import jmalvin.modsync.ModSyncClient;
+import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRefNameException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 
@@ -14,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class ModDownloader {
@@ -30,6 +35,10 @@ public class ModDownloader {
 
     public Git getGitDir() {
         return gitDir;
+    }
+
+    public void resetGit() {
+        gitDir = null;
     }
 
     public boolean upToDate() throws IOException {
@@ -83,7 +92,17 @@ public class ModDownloader {
                 gitDir.add().setAll(true).call();
                 gitDir.stashCreate().call();
                 gitDir.pull().call();
-                gitDir.stashApply().call();
+
+                String[] pathNames = ModSyncClient.CONFIG.getListConfig("ignored");
+                for (String pathName : pathNames) {
+                    gitDir.rm().addFilepattern(pathName).call();
+                }
+
+                CheckoutCommand cmd = gitDir.checkout().setStartPoint("stash@{0}");
+                for (String pathName : pathNames) {
+                    cmd.addPath(pathName);
+                }
+                cmd.call();
                 return true;
             } catch (Exception e) {
                 String message = e.getMessage().contains("cannot open git-upload-pack") ? "Internet connection error" : e.getMessage();
@@ -93,28 +112,40 @@ public class ModDownloader {
         return false;
     }
 
-    public boolean setupRepo(String repo) throws IOException{
-       try {
-           Git.lsRemoteRepository()
-                   .setRemote(repo)
-                   .call();
-       } catch (GitAPIException e) {
-           throw new IOException(e.getMessage().contains("connection failed") ? "Internet connection failure" : "That repository is invalid or does not exist");
-       }
+    public boolean setupRepo(String repo) throws IOException {
+        try {
+            Git.lsRemoteRepository()
+                    .setRemote(repo)
+                    .call();
+        } catch (GitAPIException e) {
+            throw new IOException(e.getMessage().contains("connection failed") ? "Internet connection failure" : "That repository is invalid or does not exist");
+        }
 
-       File gitFolder = new File(".git");
+        File gitFolder = new File(".git");
         if (gitDir != null || gitFolder.exists()) {
             try {
                 DirCache cache = gitDir.getRepository().readDirCache();
-                RmCommand rm = gitDir.rm();
-                for (int i = 0; i < cache.getEntryCount(); i++) {
-                    String path = cache.getEntry(i).getPathString();
-                    rm.addFilepattern(path);
+
+                if (cache.getEntryCount() > 0) {
+                    gitDir.stashCreate().call();
+
+                    RmCommand rm = gitDir.rm();
+                    for (int i = 0; i < cache.getEntryCount(); i++) {
+                        String path = cache.getEntry(i).getPathString();
+                        rm.addFilepattern(path);
+                    }
+                    rm.call();
+                    try {
+                        gitDir.stashApply().call();
+                    } catch (InvalidRefNameException e) {
+                        ModSync.LOGGER.info("Stash is empty");
+                    }
                 }
-                rm.call();
-                if (gitFolder.exists()) ModDownloader.deleteDirectory(gitFolder.toPath());
+
             } catch (Exception e) {
-                throw new IOException("There was an error removing git files");
+                throw new IOException("There was an error removing git files: " + e);
+            } finally {
+                if (gitFolder.exists()) ModDownloader.deleteDirectory(gitFolder.toPath());
             }
         }
 
@@ -123,16 +154,23 @@ public class ModDownloader {
                 deleteDirectory(Path.of("modsync"));
             Git git = Git.cloneRepository().setURI(repo).setDirectory(new File("modsync")).call();
             git.close();
+            return true;
         } catch (Exception e) {
             throw new IOException("Could not clone repository");
         }
+    }
 
+    public boolean moveFolders(HashMap<Path, Boolean> folders) throws IOException {
         Path modlist = Path.of("modsync");
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(modlist)) {
-            for (Path file : stream) {;
+            for (Path file : stream) {
                 if (Files.isDirectory(file)) {
-                    moveDirectory(file, Path.of(""));
+                    if ((folders.get(file) != null && folders.get(file)) || file.toFile().getName().equals(".git"))
+                        moveDirectory(file, Path.of(""));
                 } else {
+                    // Replace file
+                    if (file.getFileName().toFile().exists())
+                        Files.delete(file.getFileName());
                     Files.move(file, file.getFileName());
                 }
             }
@@ -140,7 +178,7 @@ public class ModDownloader {
             gitDir =  Git.open(new File(""));
             return true;
         } catch (Exception e) {
-            throw new IOException(/*"There was an error extracting mods"*/e);
+            throw new IOException("Error extratcting mods: " + e.getMessage());
         }
     }
 
@@ -155,7 +193,11 @@ public class ModDownloader {
                     if (Files.isDirectory(file)) {
                         moveDirectory(file, newDir.toPath());
                     } else {
-                        Files.move(file, newDir.toPath().resolve(file.getFileName()));
+                        Path newPath = newDir.toPath().resolve(file.getFileName());
+                        // Replace file
+                        if (newPath.toFile().exists())
+                            Files.delete(newPath);
+                        Files.move(file, newPath);
                     }
                 }
             } catch (Exception e) {

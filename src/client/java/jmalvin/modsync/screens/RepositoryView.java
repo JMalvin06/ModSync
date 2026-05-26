@@ -54,7 +54,7 @@ public class RepositoryView extends Screen {
         Button pull = new Button.Builder(Component.literal("Update Mods"),
                 (button) -> {
                     CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(ModSyncClient.DOWNLOADER::pull);
-                    minecraft.setScreen(new SuccessScreen(lastScreen, future));
+                    minecraft.setScreen(new LoadingScreen(new SuccessScreen(), future));
                 })
                 .bounds(this.width / 2 + 5, this.height - 25, 100, 20).build();
         try {

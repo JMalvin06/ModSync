@@ -50,11 +50,6 @@ public class CommitList extends AbstractSelectionList<CommitList.CommitEntry> {
         return this.width - 5;
     }
 
-    @Override
-    protected void renderListItems(GuiGraphics guiGraphics, int i, int j, float f) {
-        super.renderListItems(guiGraphics, i, j, f);
-    }
-
     protected static class CommitEntry extends ContainerObjectSelectionList.Entry<CommitEntry> {
         private final RevCommit commit;
         private final Font font;

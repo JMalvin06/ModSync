@@ -8,8 +8,8 @@
 		"JMalvin06"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/JMalvin06/ModSync",
+		"sources": "https://github.com/JMalvin06/ModSync"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/modsync/icon.png",

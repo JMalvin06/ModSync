@@ -1,16 +1,21 @@
 package jmalvin.modsync.screens;
 
 import jmalvin.modsync.ModSyncClient;
+import jmalvin.modsync.tools.ModDownloader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+
+import static com.ibm.icu.text.UTF16.bounds;
 
 @Environment(EnvType.CLIENT)
 public class RepositoryInputScreen extends Screen {
@@ -37,7 +42,12 @@ public class RepositoryInputScreen extends Screen {
 
         Button buttonWidget = new Button.Builder(
             Component.literal("Back"),
-                (btn) -> this.minecraft.setScreen(lastScreen))
+                (btn) -> {
+                    if (lastScreen instanceof RepositoryView && ModSyncClient.DOWNLOADER.getGitDir() == null)
+                        this.minecraft.setScreen(new TitleScreen());
+                    else
+                        this.minecraft.setScreen(lastScreen);
+                })
                 .bounds(this.width / 2 - 40 - 45, 125, 80, 20).build();
         this.addRenderableWidget(buttonWidget);
     }
@@ -62,7 +72,7 @@ public class RepositoryInputScreen extends Screen {
                     throw new RuntimeException(e);
                 }
             });
-            this.minecraft.setScreen(new SuccessScreen(lastScreen, future));
+            this.minecraft.setScreen(new LoadingScreen(new FolderSelectScreen(this), future));
         }
 
     }
