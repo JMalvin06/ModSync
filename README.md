@@ -1,4 +1,4 @@
-<img src="preview/logo.png" style="image-rendering: pixelated;" width="128" alt="logo">
+<img src="preview/logo.svg" width="128" alt="logo">
 
 # ModSync
 This mod simplifies the sharing of custom mod packs for multiplayer by linking your mods folder to a GitHub repository.
