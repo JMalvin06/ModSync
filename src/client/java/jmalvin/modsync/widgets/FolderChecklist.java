@@ -50,6 +50,11 @@ public class FolderChecklist extends AbstractSelectionList<FolderChecklist.Folde
         }
     }
 
+    @Override
+    protected int getScrollbarPosition() {
+        return this.getX() + this.width - 6;
+    }
+
     public List<Button> getButtons() {
         return buttons;
     }
