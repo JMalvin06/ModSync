@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -94,17 +95,20 @@ public class ModDownloader {
                 gitDir.pull().call();
 
                 String[] pathNames = ModSyncClient.CONFIG.getListConfig("ignored");
-                for (String pathName : pathNames) {
-                    gitDir.rm().addFilepattern(pathName).call();
-                }
+                if (pathNames != null) {
+                    for (String pathName : pathNames) {
+                        gitDir.rm().addFilepattern(pathName).call();
+                    }
 
-                CheckoutCommand cmd = gitDir.checkout().setStartPoint("stash@{0}");
-                for (String pathName : pathNames) {
-                    cmd.addPath(pathName);
+                    CheckoutCommand cmd = gitDir.checkout().setStartPoint("stash@{0}");
+                    for (String pathName : pathNames) {
+                        cmd.addPath(pathName);
+                    }
+                    cmd.call();
                 }
-                cmd.call();
                 return true;
             } catch (Exception e) {
+                System.out.println("Modsync encountered an error while pulling! => " + e.getMessage());
                 String message = e.getMessage().contains("cannot open git-upload-pack") ? "Internet connection error" : e.getMessage();
                 throw new RuntimeException(message);
             }

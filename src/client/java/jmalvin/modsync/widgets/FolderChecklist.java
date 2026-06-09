@@ -39,6 +39,11 @@ public class FolderChecklist extends ObjectSelectionList<FolderChecklist.FolderE
         }
     }
 
+    @Override
+    protected int getScrollbarPosition() {
+        return x0 + width;
+    }
+
     public List<Button> getButtons() {
         return buttons;
     }
