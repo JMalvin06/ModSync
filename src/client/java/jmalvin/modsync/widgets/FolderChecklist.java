@@ -1,5 +1,8 @@
 package jmalvin.modsync.widgets;
 
+import jmalvin.modsync.ModSync;
+import jmalvin.modsync.ModSyncClient;
+import jmalvin.modsync.tools.ModDownloader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -8,12 +11,15 @@ import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
+import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static jmalvin.modsync.ModSyncClient.DOWNLOADER;
 
 public class FolderChecklist extends ObjectSelectionList<FolderChecklist.FolderEntry> {
 
@@ -26,17 +32,14 @@ public class FolderChecklist extends ObjectSelectionList<FolderChecklist.FolderE
         this.setLeftPos(posX);
         buttons = new ArrayList<>();
         paths = new HashMap<>();
-        if (!modFolders.toFile().isDirectory())
-            throw new IllegalArgumentException("Not a directory: " + modFolders.getFileName());
-        try (DirectoryStream<Path> folders = Files.newDirectoryStream(modFolders)) {
-            for (Path folder : folders) {
-                if (folder.toFile().isDirectory() && !folder.toFile().getName().equals(".git")) {
-                    this.addEntry(new FolderEntry(minecraft.font, folder, posX, buttons, paths, width));
-                }
+        try {
+            for (Path folder : DOWNLOADER.getTrackedFolders()) {
+                this.addEntry(new FolderEntry(minecraft.font, folder, posX, buttons, paths, width));
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     @Override
@@ -78,7 +81,7 @@ public class FolderChecklist extends ObjectSelectionList<FolderChecklist.FolderE
         return super.isMouseOver(d, e);
     }
 
-    protected static class FolderEntry extends ObjectSelectionList.Entry<FolderEntry> {
+    protected static class FolderEntry extends Entry<FolderEntry> {
         private final Font font;
         private final int listX;
         private final Path folder;

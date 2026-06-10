@@ -3,17 +3,15 @@ package jmalvin.modsync.tools;
 import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
 import org.apache.commons.lang3.SystemUtils;
-import org.eclipse.jgit.api.CheckoutCommand;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.RmCommand;
+import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.InvalidRefNameException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.URIish;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,10 +29,7 @@ public class ModDownloader {
             if (new File(".git").exists())
                 gitDir =  Git.open(new File(""));
         } catch (IOException e) {
-            try {
-                deleteDirectory(Path.of(".git"));
-            } catch (Exception ignored) {}
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error trying to open the .git file, please delete it and reload Minecraft");
         }
     }
 
@@ -86,7 +81,9 @@ public class ModDownloader {
 
     public void fetch() throws GitAPIException {
         if (gitDir != null) {
+            System.out.println("Trying to fetch!");
             gitDir.fetch().call();
+            System.out.println("fetched!");
         }
     }
 
@@ -94,21 +91,10 @@ public class ModDownloader {
         if (gitDir != null) {
             try {
                 fetch();
-                gitDir.add().setAll(true).call();
-                gitDir.stashCreate().call();
                 gitDir.pull().call();
 
-                String[] pathNames = ModSyncClient.CONFIG.getListConfig("ignored");
-                if (pathNames != null) {
-                    for (String pathName : pathNames) {
-                        gitDir.rm().addFilepattern(pathName).call();
-                    }
-
-                    CheckoutCommand cmd = gitDir.checkout().setStartPoint("stash@{0}");
-                    for (String pathName : pathNames) {
-                        cmd.addPath(pathName);
-                    }
-                    cmd.call();
+                if (ModSyncClient.CONFIG.getListConfig("ignored") != null) {
+                    removeIgnoredFolders();
                 }
                 return true;
             } catch (Exception e) {
@@ -120,7 +106,24 @@ public class ModDownloader {
         return false;
     }
 
+    public void removeIgnoredFolders() throws IOException {
+        ArrayList<String> paths = new ArrayList<>(Arrays.asList(ModSyncClient.CONFIG.getListConfig("ignored")));
+        System.out.println("Hello");
+        for (Path file : ModSyncClient.DOWNLOADER.getTrackedFiles()) {
+            if (file.getName(0).toFile().isDirectory() && paths.contains(file.getName(0).toString())) {
+                System.out.println("Removing!");
+                try {
+                    ModSyncClient.DOWNLOADER.getGitDir().rm().addFilepattern(file.toString()).call();
+                } catch (GitAPIException e) {
+                    throw new IOException(e);
+                }
+            }
+        }
+    }
+
+
     public boolean setupRepo(String repo) throws IOException {
+        // TODO: Fix https:// requirement?
         try {
             Git.lsRemoteRepository()
                     .setRemote(repo)
@@ -130,122 +133,64 @@ public class ModDownloader {
         }
 
         File gitFolder = new File(".git");
-        if (gitDir != null || gitFolder.exists()) {
-            try {
-                DirCache cache = gitDir.getRepository().readDirCache();
-
-                if (cache.getEntryCount() > 0) {
-                    gitDir.stashCreate().call();
-
-                    RmCommand rm = gitDir.rm();
-                    for (int i = 0; i < cache.getEntryCount(); i++) {
-                        String path = cache.getEntry(i).getPathString();
-                        rm.addFilepattern(path);
-                    }
-                    rm.call();
-                    try {
-                        gitDir.stashApply().call();
-                    } catch (InvalidRefNameException e) {
-                        ModSync.LOGGER.info("Stash is empty");
-                    }
-                }
-
-            } catch (Exception e) {
-                throw new IOException("There was an error removing git files: " + e);
-            } finally {
-                if (gitFolder.exists()) ModDownloader.deleteDirectory(gitFolder.toPath());
-            }
-        }
-
         try {
-            if (new File("modsync").exists())
-                deleteDirectory(Path.of("modsync"));
-            Git git = Git.cloneRepository().setURI(repo).setDirectory(new File("modsync")).call();
-            git.close();
-            return true;
+            if (gitDir != null || gitFolder.exists()) {
+                gitDir.remoteSetUrl()
+                        .setRemoteUri(new URIish(repo))
+                        .call();
+                gitDir.fetch()
+                        .call();
+                gitDir.reset()
+                        .setMode(ResetCommand.ResetType.HARD)
+                        .call();
+            } else {
+                gitDir = Git.init()
+                        .call();
+                gitDir.remoteAdd()
+                        .setUri(new URIish(repo))
+                        .setName("origin")
+                        .call();
+                gitDir.fetch()
+                        .setRemote("origin")
+                        .call();
+                gitDir.checkout()
+                        .setForced(true)
+                        .setCreateBranch(true)
+                        .setName("main")
+                        .setStartPoint("origin/main")
+                        .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                        .call();
+            }
         } catch (Exception e) {
-            throw new IOException("Could not clone repository");
+            throw new IOException("Could not set new remote: " + e);
         }
+        return true;
     }
 
-    public boolean moveFolders(HashMap<Path, Boolean> folders) throws IOException {
-        Path modlist = Path.of("modsync");
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(modlist)) {
-            for (Path file : stream) {
-                if (Files.isDirectory(file)) {
-                    if ((folders.get(file) != null && folders.get(file)) || file.toFile().getName().equals(".git"))
-                        moveDirectory(file, Path.of(""));
-                } else {
-                    // Replace file
-                    if (file.getFileName().toFile().exists())
-                        Files.delete(file.getFileName());
-                    Files.move(file, file.getFileName());
-                }
-            }
-            deleteDirectory(modlist);
-            gitDir =  Git.open(new File(""));
-            return true;
-        } catch (Exception e) {
-            throw new IOException("Error extratcting mods: " + e.getMessage());
-        }
-    }
-
-    public static void moveDirectory(Path dir, Path dst) throws IOException {
-        if (!Files.isDirectory(dir))
-            throw new IllegalArgumentException("Not a directory");
-
-        File newDir = dst.resolve(dir.getFileName()).toFile();
-        if (newDir.mkdir() || newDir.exists()) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-                for (Path file : stream) {
-                    if (Files.isDirectory(file)) {
-                        moveDirectory(file, newDir.toPath());
-                    } else {
-                        Path newPath = newDir.toPath().resolve(file.getFileName());
-                        // Replace file
-                        try {
-                            if (newPath.toFile().exists())
-                                Files.delete(newPath);
-                            try {
-                                Files.move(file, newPath);
-                            } catch (IOException e) {
-                                Files.copy(file, newPath);
-                            }
-                        } catch (IOException ignored) {}
-                    }
-                }
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
-
+    public List<Path> getTrackedFiles() throws IOException {
+        if (gitDir == null)
+            return null;
+        ArrayList<Path> tracked = new ArrayList<>();
         try {
-            deleteDirectory(dir);
+            DirCache cache = gitDir.getRepository().readDirCache();
+            for (int i = 0; i < cache.getEntryCount(); i++) {
+                tracked.add(Path.of(cache.getEntry(i).getPathString()));
+            }
         } catch (IOException e) {
-            return;
+            throw new IOException("Could not parse paths: " + e);
         }
+        return tracked;
     }
 
-    public static void deleteDirectory(Path dir) throws IOException {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
-            for (Path file : stream) {
-                if (Files.isDirectory(file)) {
-                    deleteDirectory(file);
-                } else {
-                    try {
-                        Files.delete(file);
-                    } catch (IOException e) {
-                        if (SystemUtils.IS_OS_WINDOWS) {
-                            ModSync.LOGGER.info("Could not delete \"" + file + "\". Delete manually when Minecraft is closed");
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
+    public List<Path> getTrackedFolders() throws IOException {
+        List<Path> files = getTrackedFiles();
+        ArrayList<Path> folders = new ArrayList<>();
+        for (Path file : files) {
+            Path root = file.getName(0);
+            if (root.toFile().isDirectory() && !folders.contains(root)) {
+                folders.add(root);
             }
-        } catch (Exception e) {
-            throw new IOException(e);
         }
-        Files.delete(dir);
+        return folders;
     }
 }
