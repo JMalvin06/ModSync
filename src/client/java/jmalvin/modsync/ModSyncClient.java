@@ -4,6 +4,10 @@ import jmalvin.modsync.config.ModConfig;
 import jmalvin.modsync.tools.ModDownloader;
 import net.fabricmc.api.ClientModInitializer;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public class ModSyncClient implements ClientModInitializer {
 
 	public static final ModConfig CONFIG = new ModConfig();
@@ -12,5 +16,12 @@ public class ModSyncClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		// This entrypoint is suitable for setting up client-specific logic, such as rendering.
+		if (Files.exists(Path.of("modsync"))) {
+			try {
+				ModDownloader.deleteDirectory(Path.of("modsync"));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
 	}
 }
