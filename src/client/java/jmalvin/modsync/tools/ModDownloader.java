@@ -202,14 +202,15 @@ public class ModDownloader {
                     } else {
                         Path newPath = newDir.toPath().resolve(file.getFileName());
                         // Replace file
-                        if (newPath.toFile().exists())
-                            Files.delete(newPath);
                         try {
-                            Files.move(file, newPath);
-                        } catch (IOException e) {
-                            Files.copy(file, newPath);
-                        }
-
+                            if (newPath.toFile().exists())
+                                Files.delete(newPath);
+                            try {
+                                Files.move(file, newPath);
+                            } catch (IOException e) {
+                                Files.copy(file, newPath);
+                            }
+                        } catch (IOException ignored) {}
                     }
                 }
             } catch (Exception e) {
