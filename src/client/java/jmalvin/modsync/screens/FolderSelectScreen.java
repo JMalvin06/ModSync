@@ -41,14 +41,11 @@ public class FolderSelectScreen extends Screen {
                                     ignoredPaths.add(path);
                                 }
                             });
-                            System.out.println(ignoredPaths);
                             if (!ModSyncClient.CONFIG.fileExists()) {
                                 ModSyncClient.CONFIG.createFile();
                             }
                             if (ignoredPaths.isEmpty()) {
-                                System.out.println("trying to delete");
                                 ModSyncClient.CONFIG.delete("ignored");
-                                System.out.println("deleted");
                             } else {
                                 ModSyncClient.CONFIG.setConfig("ignored", ignoredPaths);
                                 ModSyncClient.DOWNLOADER.removeIgnoredFolders();

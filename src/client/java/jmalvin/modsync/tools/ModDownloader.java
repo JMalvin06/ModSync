@@ -81,9 +81,7 @@ public class ModDownloader {
 
     public void fetch() throws GitAPIException {
         if (gitDir != null) {
-            System.out.println("Trying to fetch!");
             gitDir.fetch().call();
-            System.out.println("fetched!");
         }
     }
 
@@ -108,10 +106,8 @@ public class ModDownloader {
 
     public void removeIgnoredFolders() throws IOException {
         ArrayList<String> paths = new ArrayList<>(Arrays.asList(ModSyncClient.CONFIG.getListConfig("ignored")));
-        System.out.println("Hello");
         for (Path file : ModSyncClient.DOWNLOADER.getTrackedFiles()) {
             if (file.getName(0).toFile().isDirectory() && paths.contains(file.getName(0).toString())) {
-                System.out.println("Removing!");
                 try {
                     ModSyncClient.DOWNLOADER.getGitDir().rm().addFilepattern(file.toString()).call();
                 } catch (GitAPIException e) {
