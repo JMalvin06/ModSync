@@ -2,6 +2,7 @@ package jmalvin.modsync.tools;
 
 import jmalvin.modsync.ModSync;
 import jmalvin.modsync.ModSyncClient;
+import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RmCommand;
@@ -231,7 +232,15 @@ public class ModDownloader {
                 if (Files.isDirectory(file)) {
                     deleteDirectory(file);
                 } else {
-                    Files.delete(file);
+                    try {
+                        Files.delete(file);
+                    } catch (IOException e) {
+                        if (SystemUtils.IS_OS_WINDOWS) {
+                            ModSync.LOGGER.info("Could not delete \"" + file + "\". Delete manually when Minecraft is closed");
+                        } else {
+                            throw e;
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
