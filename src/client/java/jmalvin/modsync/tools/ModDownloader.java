@@ -30,6 +30,9 @@ public class ModDownloader {
             if (new File(".git").exists())
                 gitDir =  Git.open(new File(""));
         } catch (IOException e) {
+            try {
+                deleteDirectory(Path.of(".git"));
+            } catch (Exception ignored) {}
             throw new RuntimeException(e);
         }
     }
@@ -201,7 +204,12 @@ public class ModDownloader {
                         // Replace file
                         if (newPath.toFile().exists())
                             Files.delete(newPath);
-                        Files.move(file, newPath);
+                        try {
+                            Files.move(file, newPath);
+                        } catch (IOException e) {
+                            Files.copy(file, newPath);
+                        }
+
                     }
                 }
             } catch (Exception e) {
@@ -209,7 +217,11 @@ public class ModDownloader {
             }
         }
 
-        Files.delete(dir);
+        try {
+            deleteDirectory(dir);
+        } catch (IOException e) {
+            return;
+        }
     }
 
     public static void deleteDirectory(Path dir) throws IOException {
