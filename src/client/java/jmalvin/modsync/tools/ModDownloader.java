@@ -16,10 +16,7 @@ import org.eclipse.jgit.transport.URIish;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class ModDownloader {
     private static Git gitDir;
@@ -91,6 +88,11 @@ public class ModDownloader {
                 fetch();
                 gitDir.pull().call();
 
+                if (SystemUtils.IS_OS_WINDOWS) {
+                    Set<String> toDelete = gitDir.status().call().getRemoved();
+                    ModSyncClient.CONFIG.setConfig("to_delete", new ArrayList<>(toDelete));
+                }
+
                 if (ModSyncClient.CONFIG.getListConfig("ignored") != null) {
                     removeIgnoredFolders();
                 }
@@ -133,15 +135,27 @@ public class ModDownloader {
             if (gitDir != null || gitFolder.exists()) {
                 gitDir.remoteSetUrl()
                         .setRemoteUri(new URIish(repo))
+                        .setRemoteName("origin")
                         .call();
                 gitDir.fetch()
                         .call();
                 gitDir.reset()
                         .setMode(ResetCommand.ResetType.HARD)
+                        .setRef("origin/main")
                         .call();
+
+                ArrayList<String> remainingMods = new ArrayList<>();
+                for (String fileName : gitDir.status().call().getUntracked()) {
+                    if (fileName.startsWith("mods")) {
+                        remainingMods.add(fileName);
+                    }
+                }
+                ModSyncClient.CONFIG.setConfig("to_delete", remainingMods);
             } else {
-                gitDir = Git.init()
-                        .call();
+                InitCommand init = Git.init();
+                if (SystemUtils.IS_OS_WINDOWS)
+                    init.setDirectory(new File("modsync_temp"));
+                gitDir = init.call();
                 gitDir.remoteAdd()
                         .setUri(new URIish(repo))
                         .setName("origin")

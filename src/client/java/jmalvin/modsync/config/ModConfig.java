@@ -69,7 +69,7 @@ public class ModConfig {
         configData.put(key, data);
     }
 
-    public <T> void setConfig(String key, ArrayList<T> data) throws IOException {
+    public <T> void setConfig(String key, List<T> data) throws IOException {
         StringBuilder configString = new StringBuilder();
         for (T entry : data) {
             configString.append(entry.toString());

@@ -19,6 +19,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.nio.file.Path;
+
 @Mixin(TitleScreen.class)
 public abstract class TitleScreenMixin extends Screen {
     protected TitleScreenMixin(Component component) {
@@ -34,7 +36,9 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Unique
     private void setModsync() {
-        if (ModSyncClient.DOWNLOADER.getGitDir() == null) {
+        if(Path.of("modsync_temp").toFile().exists()) {
+            this.minecraft.setScreen(new SyncErrorScreen("Please restart the game to use Modsync"));
+        } else if (ModSyncClient.DOWNLOADER.getGitDir() == null) {
             this.minecraft.setScreen(new RepositoryInputScreen(this));
         } else {
             try {
