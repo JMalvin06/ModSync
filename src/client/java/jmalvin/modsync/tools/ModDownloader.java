@@ -86,7 +86,7 @@ public class ModDownloader {
         if (gitDir != null) {
             try {
                 fetch();
-                gitDir.pull().call();
+                gitDir.pull().setRebase(true).call();
 
                 if (SystemUtils.IS_OS_WINDOWS) {
                     Set<String> toDelete = gitDir.status().call().getRemoved();
