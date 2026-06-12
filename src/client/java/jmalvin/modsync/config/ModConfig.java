@@ -45,7 +45,11 @@ public class ModConfig {
                 String config = scnr.nextLine().trim();
                 if (!config.startsWith("#") && !config.isBlank()) {
                     String[] list = config.split("=");
-                    configData.put(list[0].trim(), list[1].trim());
+                    try {
+                        configData.put(list[0].trim(), list[1].trim());
+                    } catch (Exception e) {
+                        delete(list[0]);
+                    }
                 }
             }
         } else {
@@ -75,7 +79,8 @@ public class ModConfig {
             configString.append(entry.toString());
             configString.append(",");
         }
-        configString.deleteCharAt(configString.length()-1);
+        if (!data.isEmpty())
+            configString.deleteCharAt(configString.length()-1);
         setConfig(key, configString.toString());
     }
 

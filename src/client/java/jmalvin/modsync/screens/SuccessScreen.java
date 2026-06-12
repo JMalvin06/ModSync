@@ -20,8 +20,8 @@ public class SuccessScreen extends Screen {
     @Override
     protected void init() {
         this.button = new Button.Builder(
-                Component.literal("Return to Menu"),
-                (btn) -> this.minecraft.setScreen(new TitleScreen()))
+                Component.literal("Quit Game"),
+                (btn) -> this.minecraft.stop())
                 .bounds(this.width / 2 - 50, 130, 100, 20).build();
 
         this.addRenderableWidget(button);

@@ -137,17 +137,24 @@ public class ModDownloader {
                         .setRemoteUri(new URIish(repo))
                         .setRemoteName("origin")
                         .call();
+                System.out.println("Set uri");
                 gitDir.fetch()
                         .call();
+                System.out.println("fetched");
                 gitDir.reset()
                         .setMode(ResetCommand.ResetType.HARD)
                         .setRef("origin/main")
                         .call();
+                System.out.println("reset");
 
                 ArrayList<String> remainingMods = new ArrayList<>();
-                for (String fileName : gitDir.status().call().getUntracked()) {
-                    if (fileName.startsWith("mods")) {
-                        remainingMods.add(fileName);
+                if (gitDir.status().call().getUntracked() != null) {
+                    for (String fileName : gitDir.status().call().getUntracked()) {
+                        //System.out.println(fileName);
+                        if (fileName.startsWith("mods")) {
+                            System.out.println("adding.." + fileName);
+                            remainingMods.add(fileName);
+                        }
                     }
                 }
                 ModSyncClient.CONFIG.setConfig("to_delete", remainingMods);
