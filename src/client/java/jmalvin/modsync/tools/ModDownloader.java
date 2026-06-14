@@ -85,9 +85,11 @@ public class ModDownloader {
     public boolean pull() {
         if (gitDir != null) {
             try {
-                fetch();
-                gitDir.pull().setRebase(true).call();
-
+                gitDir.fetch().call();
+                gitDir.reset()
+                        .setMode(ResetCommand.ResetType.HARD)
+                        .setRef("origin/main")
+                        .call();
                 if (SystemUtils.IS_OS_WINDOWS) {
                     Set<String> toDelete = gitDir.status().call().getRemoved();
                     ModSyncClient.CONFIG.setConfig("to_delete", new ArrayList<>(toDelete));
@@ -137,15 +139,12 @@ public class ModDownloader {
                         .setRemoteUri(new URIish(repo))
                         .setRemoteName("origin")
                         .call();
-                System.out.println("Set uri");
                 gitDir.fetch()
                         .call();
-                System.out.println("fetched");
                 gitDir.reset()
                         .setMode(ResetCommand.ResetType.HARD)
                         .setRef("origin/main")
                         .call();
-                System.out.println("reset");
 
                 ArrayList<String> remainingMods = new ArrayList<>();
                 if (gitDir.status().call().getUntracked() != null) {
